@@ -1,0 +1,134 @@
+#include <stdio.h>
+int MOTOR2_PIN1 = 3;
+int MOTOR2_PIN2 = 5;
+int MOTOR1_PIN1 = 6;
+int MOTOR1_PIN2 = 9;
+
+int viteza_motoare=200, ultima_valoare_citita=0;
+
+void setup() {                
+        Serial.begin(9600);
+        pinMode(8, INPUT);
+        pinMode(10, INPUT);
+        pinMode(MOTOR1_PIN1, OUTPUT);
+        pinMode(MOTOR1_PIN2, OUTPUT);
+        pinMode(MOTOR2_PIN1, OUTPUT);
+        pinMode(MOTOR2_PIN2, OUTPUT);
+}
+
+void loop() {
+  int valori_senzori[3], valoare_senzor_finala, valori_senzori_stanga[3], valoare_senzor_finala_stanga, k=0;
+  
+  for(int i=0;i<=2;i++){
+    valori_senzori[i] = digitalRead(8); //pregatire pentru calculare medie dintre valorile senzorului digital pentru dreapta
+  }
+   for(int i=0;i<=2;i++){
+    valori_senzori_stanga[i] = digitalRead(10); //pregatire pentru calculare medie dintre valorile senzorului digital pentru stanga
+  }
+  valoare_senzor_finala = medie(valori_senzori);
+  valoare_senzor_finala_stanga = medie(valori_senzori_stanga);
+  int valoareSenzor = readDistanceMediata(0); //Valoare senzor analog
+  viteza_motoare = calculare_viteza(valoareSenzor); // Calculeaza viteza in functie de senzorul analog
+
+  if( k==1){
+    go(90,10);
+    k = 0;
+    goto def;
+  }
+    
+  if(!valoare_senzor_finala && !valoare_senzor_finala_stanga){
+    go(90,10);
+    goto def;
+  }
+  if(valoare_senzor_finala == 0){
+  go(70,10);
+  }
+ 
+  if(valoare_senzor_finala_stanga == 1)
+   if(valoare_senzor_finala == 1){
+    go(50,110);
+   }
+  if(valoareSenzor >= 10 && !valoare_senzor_finala_stanga){
+      go(100,100);
+    }
+ def:
+  if(valoare_senzor_finala == 1 && valoare_senzor_finala_stanga == 0)
+       go(viteza_motoare,viteza_motoare);
+   
+  if(valoareSenzor <= 7 && !valoare_senzor_finala){
+    k = 1;
+    go(0,0);
+    delay(20);
+    go(-120,-120);
+    delay(300);
+    go(200,50);
+    delay(250);
+  }
+  else
+  k = 0; 
+  delay(50);
+}
+
+int medie(int a[3]){
+  int i,suma=0;
+  for(i=0;i<=2;i++){
+   suma = suma+a[i];
+  } 
+  
+  if(suma >= 2) 
+    return 1;
+  else          
+    return 0;
+  
+}
+void go(int speedLeft, int speedRight){
+  if (speedLeft > 0) {
+    analogWrite(MOTOR1_PIN1, speedLeft);
+    analogWrite(MOTOR1_PIN2, 0);
+  } 
+  else {
+    analogWrite(MOTOR1_PIN1, 0);
+    analogWrite(MOTOR1_PIN2, -speedLeft);
+  }
+ 
+  if (speedRight > 0) {
+    analogWrite(MOTOR2_PIN1, speedRight);
+    analogWrite(MOTOR2_PIN2, 0);
+  }else {
+    analogWrite(MOTOR2_PIN1, 0);
+    analogWrite(MOTOR2_PIN2, -speedRight);
+  }
+} 
+int readDistanceMediata(int pin) {// face media dintre 6 valori returnate de senzorul digital de distanta si in functie de valoarea acesteia returneaza o distanta aproximata in cm
+  int i,media=0;
+  for(i=0;i<=5;i++){
+      media += abs(analogRead(0));  
+  } 
+  media = media / 6;
+  
+  if((media>0)  && (media < 200))
+      return 15;
+  if((media >= 200) && (media < 350))
+      return 10;
+  if((media>= 250) && (media < 370))
+      return 7;
+  if(media >=380)
+      return 5;
+}
+
+int calculare_viteza(int a){ 
+  switch(a){
+    case 5:
+       return 0;
+       break;
+    case 7:
+       return 30;
+       break;
+    case 10:
+       return 70;
+       break;
+    case 15:
+       return 100;
+       break;
+  } 
+}
